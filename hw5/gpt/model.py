@@ -40,14 +40,14 @@ class CausalSelfAttention(nn.Module):
         #   The matrix should has 1s in the lower left triangular part (including the diagonal) and 0s in the upper right.
         #   Name the matrix `causal_mask`
         # Hint: you can check torch.tril for creating the matrix with the help of torch.ones.
-
+        causal_mask = torch.tril(torch.ones(config.block_size, config.block_size))
         # your code ends here
 
         # expand the mask for the batch and head dimensions
 
         # register the mask as a buffer so it's not updated as a model parameter
         # but can still be used in the forward pass & saved to the state_dict
-        self.register_buffer("causal_mask", casual_mask)
+        self.register_buffer("causal_mask", causal_mask)
         self.n_head = config.n_head
         self.n_embd = config.n_embd
 
@@ -87,12 +87,30 @@ class CausalSelfAttention(nn.Module):
         # step 4: apply the attention dropout (self.attn_dropout) to the attention matrix
 
         # step 5: multiply the attention matrix with value vectors
+        qkv = self.c_attn(x)
+        q, k, v = qkv.split(self.n_embd, dim=2)
+
+        head_dim = C // self.n_head
+        q = q.view(B, T, self.n_head, head_dim).transpose(1, 2)
+        k = k.view(B, T, self.n_head, head_dim).transpose(1, 2)
+        v = v.view(B, T, self.n_head, head_dim).transpose(1, 2)
+
+        att = (q @ k.transpose(-2, -1)) / (head_dim ** 0.5)
+
+        mask = self.causal_mask[:T, :T]
+        att = att.masked_fill(mask == 0, float('-inf'))
+
+        att = F.softmax(att, dim=-1)
+        att = self.attn_dropout(att)
+
+        y = att @ v
 
         # your code ends here
 
         y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
 
         # output projection
+        y = self.resid_dropout(self.c_proj(y))
 
         return y
 

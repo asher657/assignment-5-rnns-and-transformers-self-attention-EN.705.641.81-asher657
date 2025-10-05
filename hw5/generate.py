@@ -8,7 +8,7 @@ set_seed(3407)
 #%%
 use_mingpt = True # use minGPT or huggingface/transformers model?
 model_type = 'gpt2-xl'
-device = 'cuda'
+device = 'mps'
 
 def generate(model, prompt='', num_samples=10, steps=20, do_sample=True):
     # tokenize the input prompt into integer input sequence

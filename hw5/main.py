@@ -4,6 +4,8 @@ from gpt.model import GPT
 from gpt.trainer import Trainer
 from generate import generate
 
+accelerated_device = 'mps'
+
 
 def batch_end_callback(trainer):
     trainer.all_iter_train_loss.append(trainer.iter_train_loss.item())
@@ -24,7 +26,7 @@ def evaluation_callback(trainer):
 
 def sample_from_trained_model(trained_model):
     trained_model.load_state_dict(torch.load('model.pth'))
-    trained_model.to('cuda')
+    trained_model.to(accelerated_device)
     trained_model.eval()
 
     generate(trained_model, prompt=' The best perks of living on the east', num_samples=1, steps=30)
@@ -63,11 +65,11 @@ def run(train_dataset, dev_dataset, max_iter=1, device='cpu', plot=True, sample=
 
 def cpu_gpu_comparison(train_dataset, dev_dataset, max_iter=100):
     run(train_dataset, dev_dataset, max_iter=max_iter, device='cpu', plot=False, sample=False)
-    run(train_dataset, dev_dataset, max_iter=max_iter, device='cuda', plot=False, sample=False)
+    run(train_dataset, dev_dataset, max_iter=max_iter, device=accelerated_device, plot=False, sample=False)
 
 
 def gpu_full_run(train_dataset, dev_dataset, max_iter=20000):
-    run(train_dataset, dev_dataset, max_iter=max_iter, device='cuda', plot=True, sample=True)
+    run(train_dataset, dev_dataset, max_iter=max_iter, device=accelerated_device, plot=True, sample=True)
 
 
 if __name__ == '__main__':
@@ -79,7 +81,7 @@ if __name__ == '__main__':
 
     # TODO: run cpu & gpu comparison
     # uncomment the following line to run
-    cpu_gpu_comparison(train_d, dev_d, max_iter=50)
+    # cpu_gpu_comparison(train_d, dev_d, max_iter=50)
 
     # TODO: run the full training on gpu
     # uncomment the following line to run
